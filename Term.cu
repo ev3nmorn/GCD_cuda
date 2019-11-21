@@ -1,94 +1,66 @@
 #include "Term.cuh"
 
-Term::Term(std::string coefficient, int power) {
+Term::Term(int coefficient, int power, GF2m field) {
+	this->field = field;
 	coefficient_ = coefficient;
 	power_ = power;
 }
 
 Term operator *(Term t1, Term t2) {
-	if (t1.coefficient_ == "0" || t2.coefficient_ == "0") {
-		return *new Term("0", 0);
+	if (t1.coefficient_ == -1 || t2.coefficient_ == -1) {
+		return *new Term(-1, 0, t1.field);
 	}
 
-	if (t1.coefficient_ == "1") {
-		return *new Term(t2.coefficient_, t1.power_ + t2.power_);
+	if (t1.coefficient_ == 0) {
+		return *new Term(t2.coefficient_, t1.power_ + t2.power_, t2.field);
 	}
 
-	if (t2.coefficient_ == "1") {
-		return *new Term(t1.coefficient_, t1.power_ + t2.power_);
+	if (t2.coefficient_ == 0) {
+		return *new Term(t1.coefficient_, t1.power_ + t2.power_, t1.field);
 	}
 
-	int indT1 = t1.coefficient_.find('a'),
-		degreeT1 = std::stoi(t1.coefficient_.substr(indT1 + 1, t1.coefficient_.size() - indT1 - 1)),
-		indT2 = t2.coefficient_.find('a'),
-		degreeT2 = std::stoi(t2.coefficient_.substr(indT2 + 1, t2.coefficient_.size() - indT2 - 1)),
-		newDegree = (degreeT1 + degreeT2) % (int)(GF2m::getElementsCount() - 1);
+	int newDegree = (t1.coefficient_ + t2.coefficient_) % (int)(t1.field.get_elements_count() - 1);
 
-	if (newDegree == 0)
-	{
-		return *new Term("1", t1.power_ + t2.power_);
+	if (newDegree == 0) {
+		return *new Term(0, t1.power_ + t2.power_, t1.field);
 	}
-	else
-	{
-		return *new Term("a" + std::to_string(newDegree), t1.power_ + t2.power_);
+	else {
+		return *new Term(newDegree, t1.power_ + t2.power_, t1.field);
 	}
 }
 
 Term operator /(Term t1, Term t2) {
-	if (t1.coefficient_ == "0") {
-		return *new Term("0", 0);
+	if (t1.coefficient_ == -1) {
+		return *new Term(-1, 0, t1.field);
+	}
+	if (t2.coefficient_ == 0) {
+		return *new Term(t1.coefficient_, t1.power_ - t2.power_, t1.field);
+	}
+	if (t1.coefficient_ == 0) {
+		return *new Term(t1.field.get_elements_count() - t2.coefficient_ - 1, t1.power_ - t2.power_, t1.field);
 	}
 
-	if (t2.coefficient_ == "0") {
-		throw new std::exception("divide by zero element");
-	}
-
-	if (t2.coefficient_ == "1") {
-		return *new Term(t1.coefficient_, t1.power_ - t2.power_);
-	}
-
-	if (t1.coefficient_ == "1") {
-		int ind = t2.coefficient_.find('a'),
-			degree = std::stoi(t2.coefficient_.substr(ind + 1, t2.coefficient_.size() - ind - 1));
-		return *new Term("a" + std::to_string(GF2m::getElementsCount() - degree - 1), t1.power_ - t2.power_);
-	}
-
-
-
-	int indT1 = t1.coefficient_.find('a'),
-		degreeT1 = std::stoi(t1.coefficient_.substr(indT1 + 1, t1.coefficient_.size() - indT1 - 1)),
-		indT2 = t2.coefficient_.find('a'),
-		degreeT2 = std::stoi(t2.coefficient_.substr(indT2 + 1, t2.coefficient_.size() - indT2 - 1)),
-		newDegree = degreeT1 - degreeT2;
+	int newDegree = t1.coefficient_ - t2.coefficient_;
 
 	if (newDegree < 0) {
-		newDegree = GF2m::getElementsCount() - 1 + newDegree;
+		newDegree = t1.field.get_elements_count() - 1 + newDegree;
 	}
 
-	if (newDegree == 0) {
-		return *new Term("1", t1.power_ - t2.power_);
-	}
-	else {
-		return *new Term("a" + std::to_string(newDegree), t1.power_ - t2.power_);
-	}
+	return *new Term(newDegree, t1.power_ - t2.power_, t1.field);
 }
 
 Term operator +(Term t1, Term t2) {
-	if (t1.power_ != t2.power_) {
-		throw std::exception("Not equal powers in sum operator");
-	}
+	uint32_t newCoefficientValue = t1.field.get_elements()[t1.coefficient_] ^ t1.field.get_elements()[t2.coefficient_];
+	int newCoefficient;
 
-	uint32_t newCoefficientValue = GF2m::getElements()[t1.coefficient_] ^ GF2m::getElements()[t2.coefficient_];
-	std::string newCoefficient = "";
-
-	for(auto element : GF2m::getElements()) {
+	for (auto element : t1.field.get_elements()) {
 		if (newCoefficientValue == element.second) {
 			newCoefficient = element.first;
 			break;
 		}
 	}
 
-	return *new Term(newCoefficient, t1.power_);
+	return *new Term(newCoefficient, t1.power_, t1.field);
 }
 
 Term operator -(Term t1, Term t2) {
@@ -98,9 +70,9 @@ Term operator -(Term t1, Term t2) {
 std::string Term::to_string() {
 	std::string result = "";
 
-	if (coefficient_ == "1") {
+	if (coefficient_ == 0) {
 		if (power_ == 0) {
-			result = coefficient_;
+			result = "1";
 		}
 		else if (power_ == 1) {
 			result = "x";
@@ -111,13 +83,13 @@ std::string Term::to_string() {
 	}
 	else {
 		if (power_ == 0) {
-			result = coefficient_;
+			result = "a" + std::to_string(coefficient_);
 		}
 		else if (power_ == 1) {
-			result = coefficient_ + "*x";
+			result = "a" + std::to_string(coefficient_) + "*x";
 		}
 		else {
-			result = coefficient_ + "*x^" + std::to_string(power_);
+			result = "a" + std::to_string(coefficient_) + "*x^" + std::to_string(power_);
 		}
 	}
 

@@ -1,5 +1,9 @@
 #pragma once
 
+#include "Shift_functor.h"
+#include "cuda_runtime.h"
+#include "device_launch_parameters.h"
+#include "thrust/device_vector.h"
 #include <iostream>
 #include <list>
 #include <string>
@@ -8,20 +12,20 @@
 
 class GF2m {
 private:
-	static std::unordered_map<std::string, uint32_t> elements_;
-	static std::list<std::pair<std::string, uint32_t>> elementsToPrint_;
-	static uint32_t fieldMod_, bitsPerElement_, highBitPoly_;
+	std::unordered_map<int, uint32_t> elements_;
+	std::list<std::pair<int, uint32_t>> elementsToPrint_;
+	uint32_t fieldMod_, bitsPerElement_, highBitPoly_;
 
-	GF2m() {}
-	~GF2m() {}
-	static uint32_t getHighBit(uint32_t value);
-	static uint32_t elementsMult(uint32_t op1, uint32_t op2);
-	static std::string elementToBitStr(uint32_t value);
-	static bool isElementByValue(uint32_t value);
+	uint32_t get_high_bit(uint32_t value);
+	uint32_t elements_mult(uint32_t op1, uint32_t op2);
+	std::string element_to_bit_str(uint32_t value);
+	bool is_element_by_value(uint32_t value);
 
 public:
-	static void build(uint32_t irreduciblePolynomial);
-	static uint32_t getElementsCount() { return highBitPoly_; }
-	static std::unordered_map<std::string, uint32_t> getElements() { return elements_; }
-	static void print();
+	GF2m(uint32_t irreduciblePolynomial);
+	GF2m() {}
+	~GF2m() {}
+	uint32_t get_elements_count() { return highBitPoly_; }
+	std::unordered_map<int, uint32_t> get_elements() { return elements_; }
+	friend std::ostream& operator<<(std::ostream &os, GF2m& field);
 };

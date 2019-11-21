@@ -7,27 +7,26 @@
 #include <list>
 #include <string>
 #include <vector>
+#include <algorithm>
 
 class Polynomial {
 private:
-	std::list<Term> terms_;
+	std::vector<Term> terms_;
+	GF2m field;
 
-	void sortByPower();
-	void deleteZeroElements();
-	bool hasEqualPower(Term term);
-	void addToEqualPower(Term term);
-	void addUnique(Term term);
+	void sort_by_power();
+	void delete_zero_elements();
+	bool has_equal_power(Term term);
+	void add_to_equal_power(Term term);
+	void add_unique(Term term);
 
 public:
-	Polynomial();
-	Polynomial(std::vector<std::string> terms);
-	Polynomial(std::list<Term> terms);
-	std::list<Term> getTerms() { return terms_; }
-	//static Polynomial GCD(Polynomial p1, Polynomial p2);
-	//static Polynomial multiGCD(std::vector<Polynomial> polynomials);
+	Polynomial(GF2m field);
+	Polynomial(std::vector<Term> terms, GF2m field);
+	std::vector<Term> get_terms() { return terms_; }
 	friend Polynomial operator *(Polynomial p1, Polynomial p2);
 	friend Polynomial operator /(Polynomial p1, Polynomial p2);
 	friend Polynomial operator +(Polynomial p1, Polynomial p2);
 	friend Polynomial operator -(Polynomial p1, Polynomial p2);
-	friend std::ostream& operator <<(std::ostream& os, const Polynomial& p);
+	friend std::ostream& operator<<(std::ostream &os, Polynomial& poly);
 };

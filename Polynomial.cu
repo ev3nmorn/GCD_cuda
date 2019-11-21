@@ -1,20 +1,20 @@
 #include "Polynomial.cuh"
 
-void Polynomial::sortByPower() {
-	terms_.sort([](Term& t1, Term& t2) { return t1.getPower() > t2.getPower();  });
+void Polynomial::sort_by_power() {
+	std::sort(terms_.begin(), terms_.end(), [](Term& t1, Term& t2) { return t1.get_power() > t2.get_power();  });
 }
 
-void Polynomial::deleteZeroElements() {
-	terms_.remove_if([](Term t) { return t.getCoefficient() == "0"; });
+void Polynomial::delete_zero_elements() {
+	terms_.erase(std::remove_if(terms_.begin(), terms_.end(), [](Term t) { return t.get_coefficient() == -1; }), terms_.end());
 
 	if (terms_.size() == 0) {
-		terms_.push_back(*new Term("0", 0));
+		terms_.push_back(*new Term(-1, 0, field));
 	}
 }
 
-bool Polynomial::hasEqualPower(Term term) {
+bool Polynomial::has_equal_power(Term term) {
 	for (Term t : terms_) {
-		if (t.getPower() == term.getPower()) {
+		if (t.get_power() == term.get_power()) {
 			return true;
 		}
 	}
@@ -22,173 +22,83 @@ bool Polynomial::hasEqualPower(Term term) {
 	return false;
 }
 
-void Polynomial::addToEqualPower(Term term) {
+void Polynomial::add_to_equal_power(Term term) {
 	for (auto it = terms_.begin(); it != terms_.end(); it++) {
-		if ((*it).getPower() == term.getPower()) {
+		if ((*it).get_power() == term.get_power()) {
 			(*it) = (*it) + term;
 		}
 	}
 }
 
-void Polynomial::addUnique(Term term) {
-	if (hasEqualPower(term)) {
-		addToEqualPower(term);
+void Polynomial::add_unique(Term term) {
+	if (has_equal_power(term)) {
+		add_to_equal_power(term);
 	}
 	else {
 		terms_.push_back(term);
 	}
 }
 
-Polynomial::Polynomial() {
-	terms_ = *new std::list<Term>();
-	terms_.push_back(*new Term("0", 0));
+Polynomial::Polynomial(GF2m field) {
+	this->field = field;
+	terms_ = *new std::vector<Term>();
+	terms_.push_back(*new Term(-1, 0, field));
 }
 
-Polynomial::Polynomial(std::list<Term> terms) {
-	terms_ = *new std::list<Term>();
-	terms_.assign(terms.begin(), terms.end());
-	deleteZeroElements();
-	sortByPower();
+Polynomial::Polynomial(std::vector<Term> terms, GF2m field) {
+	this->field = field;
+	terms_ = *new std::vector<Term>();
+	terms_ = terms;
+	delete_zero_elements();
+	sort_by_power();
 }
-
-Polynomial::Polynomial(std::vector<std::string> terms) {
-	terms_ = *new std::list<Term>();
-	std::string coefficient = "", powerStr = "";
-
-	for (auto term : terms) {
-		if (term.find("x^") != std::string::npos) {
-			powerStr = term.substr(term.find("x^") + 2, term.size() - term.find("x^") - 2);
-
-			if (term.find('*') != std::string::npos) {
-				coefficient = term.substr(0, term.find("*x^"));
-			}
-			else {
-				coefficient = term.substr(0, term.find("x^"));
-			}
-
-
-			if (coefficient == "") {
-				terms_.push_back(*new Term("1", std::stoi(powerStr)));
-			}
-			else {
-				terms_.push_back(*new Term(coefficient, std::stoi(powerStr)));
-			}
-		}
-		else if (term.find("x") != std::string::npos) {
-			if (term.find('*') != std::string::npos) {
-				coefficient = term.substr(0, term.find("*x"));
-			}
-			else {
-				coefficient = term.substr(0, term.find("x"));
-			}
-
-			if (coefficient == "") {
-				terms_.push_back(*new Term("1", 1));
-			}
-			else {
-				terms_.push_back(*new Term(coefficient, 1));
-			}
-		}
-		else {
-			terms_.push_back(*new Term(term, 0));
-		}
-	}
-
-	deleteZeroElements();
-	sortByPower();
-}
-
-/*__global__ void Polynomial::parallelColumns(std::vector<Polynomial> row1, std::vector<Polynomial> row2, Polynomial q) {
-	row2[threadIdx.x] = row1[threadIdx.x] - (row2[threadIdx.x] * q);
-}
-
-Polynomial Polynomial::GCD(Polynomial p1, Polynomial p2) {
-	Polynomial q,
-		max = (*p1.terms_.begin()).getPower() >= (*p2.terms_.begin()).getPower() ? p1 : p2,
-		min = (*p1.terms_.begin()).getPower() < (*p2.terms_.begin()).getPower() ? p1 : p2;
-	std::vector<Polynomial> row1 = { *new Polynomial(*new std::vector<std::string> { "1" }), *new Polynomial(), max },
-		row2 = { *new Polynomial(), *new Polynomial(*new std::vector<std::string>{ "1" }), min },
-		temp;
-	std::vector<Polynomial> *dev_row1, *dev_row2;
-	Polynomial *dev_q;
-
-	while ((*row2[2].terms_.begin()).getCoefficient() != "0") {
-		temp = { *new Polynomial(row2[0].terms_), *new Polynomial(row2[1].terms_), *new Polynomial(row2[2].terms_) };
-
-		q = row1[2] / row2[2];
-
-		cudaMalloc((void **)&dev_row1, sizeof(row1));
-		cudaMalloc((void **)&dev_row2, sizeof(row2));
-		cudaMalloc((void **)&dev_q, sizeof(q));
-		
-		parallelColumns<<<3, 1>>>(dev_row1, dev_row2, dev_q);
-
-		row2[0] = row1[0] - (row2[0] * q);
-		row2[1] = row1[1] - (row2[1] * q);
-		row2[2] = row1[2] - (row2[2] * q);
-		row1 = { *new Polynomial(temp[0].terms_), *new Polynomial(temp[1].terms_), *new Polynomial(temp[2].terms_) };
-
-	}
-
-	return row1[2];
-}
-
-Polynomial Polynomial::multiGCD(std::vector<Polynomial> polynomials) {
-	Polynomial result;
-
-	for (int i = 0; i < polynomials.size() - 1; i++) {
-		result = (i == 0) ? GCD(polynomials[i], polynomials[i + 1]) : GCD(result, polynomials[i + 1]);
-	}
-
-	return result;
-}*/
 
 Polynomial operator*(Polynomial p1, Polynomial p2) {
-	Polynomial result;
+	Polynomial result(p1.field);
 
 	for (auto t1 : p1.terms_) {
 		for (auto t2 : p2.terms_) {
-			result.addUnique(t1 * t2);
+			result.add_unique(t1 * t2);
 		}
 	}
 
-	result.deleteZeroElements();
-	result.sortByPower();
+	result.delete_zero_elements();
+	result.sort_by_power();
 
 	return result;
 }
 
 Polynomial operator/(Polynomial p1, Polynomial p2) {
-	std::list<Term> result = *new std::list<Term>(), buf;
-	Term nextResultTerm;
-	Polynomial temp;
+	std::vector<Term> result = *new std::vector<Term>(), buf;
+	Term nextResultTerm(p1.field);
+	Polynomial temp(p1.field);
 
-	while ((*p1.terms_.begin()).getPower() >= (*p2.terms_.begin()).getPower()) {
+	while ((*p1.terms_.begin()).get_power() >= (*p2.terms_.begin()).get_power()) {
 		nextResultTerm = (*p1.terms_.begin()) / (*p2.terms_.begin());
 		result.push_back(nextResultTerm);
 
-		buf = *new std::list<Term>();
+		buf = *new std::vector<Term>();
 		buf.push_back(nextResultTerm);
-		temp = *new Polynomial(buf) * p2;
+		temp = *new Polynomial(buf, p1.field) * p2;
 
 		p1 = p1 - temp;
-		if (p1.terms_.size() == 1 && (*p1.terms_.begin()).getCoefficient() == "0") {
+		if (p1.terms_.size() == 1 && (*p1.terms_.begin()).get_coefficient() == -1) {
 			break;
 		}
 	}
 
-	return *new Polynomial(result);
+	return *new Polynomial(result, p1.field);
 }
 
 Polynomial operator+(Polynomial p1, Polynomial p2) {
-	Polynomial result = *new Polynomial(p1.terms_);
+	Polynomial result = *new Polynomial(p1.terms_, p1.field);
 
 	for (auto term : p2.terms_) {
-		result.addUnique(term);
+		result.add_unique(term);
 	}
 
-	result.deleteZeroElements();
-	result.sortByPower();
+	result.delete_zero_elements();
+	result.sort_by_power();
 
 	return result;
 }
@@ -197,13 +107,12 @@ Polynomial operator-(Polynomial p1, Polynomial p2) {
 	return p1 + p2;
 }
 
-std::ostream& operator <<(std::ostream& os, const Polynomial& p) {
+std::ostream& operator<<(std::ostream &os, Polynomial& poly) {
 	std::string result = "";
 
-	for(Term term : p.terms_) {
+	for (Term term : poly.get_terms()) {
 		result += term.to_string() + "+";
 	}
 
 	return os << result.erase(result.size() - 1, 1);
 }
-

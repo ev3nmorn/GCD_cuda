@@ -6,15 +6,15 @@
 
 class Term {
 private:
-	int power_;
-	std::string coefficient_;
+	int coefficient_, power_;
+	GF2m field;
 
 public:
-	Term() {};
-	Term(std::string coefficient, int power);
+	Term(GF2m field) { this->field = field; };
+	Term(int coefficient, int power, GF2m field);
 	~Term() { };
-	int getPower() { return power_; }
-	std::string getCoefficient() { return coefficient_; }
+	int get_power() { return power_; }
+	int get_coefficient() { return coefficient_; }
 	std::string to_string();
 	friend Term operator *(Term t1, Term t2);
 	friend Term operator /(Term t1, Term t2);
