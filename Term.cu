@@ -8,36 +8,36 @@ Term::Term(int coefficient, int power, GF2m field) {
 
 Term operator *(Term t1, Term t2) {
 	if (t1.coefficient_ == -1 || t2.coefficient_ == -1) {
-		return *new Term(-1, 0, t1.field);
+		return Term(-1, 0, t1.field);
 	}
 
 	if (t1.coefficient_ == 0) {
-		return *new Term(t2.coefficient_, t1.power_ + t2.power_, t2.field);
+		return Term(t2.coefficient_, t1.power_ + t2.power_, t2.field);
 	}
 
 	if (t2.coefficient_ == 0) {
-		return *new Term(t1.coefficient_, t1.power_ + t2.power_, t1.field);
+		return Term(t1.coefficient_, t1.power_ + t2.power_, t1.field);
 	}
 
 	int newDegree = (t1.coefficient_ + t2.coefficient_) % (int)(t1.field.get_elements_count() - 1);
 
 	if (newDegree == 0) {
-		return *new Term(0, t1.power_ + t2.power_, t1.field);
+		return Term(0, t1.power_ + t2.power_, t1.field);
 	}
 	else {
-		return *new Term(newDegree, t1.power_ + t2.power_, t1.field);
+		return Term(newDegree, t1.power_ + t2.power_, t1.field);
 	}
 }
 
 Term operator /(Term t1, Term t2) {
 	if (t1.coefficient_ == -1) {
-		return *new Term(-1, 0, t1.field);
+		return Term(-1, 0, t1.field);
 	}
 	if (t2.coefficient_ == 0) {
-		return *new Term(t1.coefficient_, t1.power_ - t2.power_, t1.field);
+		return Term(t1.coefficient_, t1.power_ - t2.power_, t1.field);
 	}
 	if (t1.coefficient_ == 0) {
-		return *new Term(t1.field.get_elements_count() - t2.coefficient_ - 1, t1.power_ - t2.power_, t1.field);
+		return Term(t1.field.get_elements_count() - t2.coefficient_ - 1, t1.power_ - t2.power_, t1.field);
 	}
 
 	int newDegree = t1.coefficient_ - t2.coefficient_;
@@ -46,7 +46,7 @@ Term operator /(Term t1, Term t2) {
 		newDegree = t1.field.get_elements_count() - 1 + newDegree;
 	}
 
-	return *new Term(newDegree, t1.power_ - t2.power_, t1.field);
+	return Term(newDegree, t1.power_ - t2.power_, t1.field);
 }
 
 Term operator +(Term t1, Term t2) {
@@ -60,7 +60,7 @@ Term operator +(Term t1, Term t2) {
 		}
 	}
 
-	return *new Term(newCoefficient, t1.power_, t1.field);
+	return Term(newCoefficient, t1.power_, t1.field);
 }
 
 Term operator -(Term t1, Term t2) {

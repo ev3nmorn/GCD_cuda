@@ -8,7 +8,7 @@ void Polynomial::delete_zero_elements() {
 	terms_.erase(std::remove_if(terms_.begin(), terms_.end(), [](Term t) { return t.get_coefficient() == -1; }), terms_.end());
 
 	if (terms_.size() == 0) {
-		terms_.push_back(*new Term(-1, 0, field));
+		terms_.push_back(Term(-1, 0, field));
 	}
 }
 
@@ -41,13 +41,13 @@ void Polynomial::add_unique(Term term) {
 
 Polynomial::Polynomial(GF2m field) {
 	this->field = field;
-	terms_ = *new std::vector<Term>();
-	terms_.push_back(*new Term(-1, 0, field));
+	//terms_ = *new std::vector<Term>();
+	terms_.push_back(Term(-1, 0, field));
 }
 
 Polynomial::Polynomial(std::vector<Term> terms, GF2m field) {
 	this->field = field;
-	terms_ = *new std::vector<Term>();
+	//terms_ = *new std::vector<Term>();
 	terms_ = terms;
 	delete_zero_elements();
 	sort_by_power();
@@ -79,7 +79,7 @@ Polynomial operator/(Polynomial p1, Polynomial p2) {
 
 		buf = *new std::vector<Term>();
 		buf.push_back(nextResultTerm);
-		temp = *new Polynomial(buf, p1.field) * p2;
+		temp = Polynomial(buf, p1.field) * p2;
 
 		p1 = p1 - temp;
 		if (p1.terms_.size() == 1 && (*p1.terms_.begin()).get_coefficient() == -1) {
@@ -91,7 +91,7 @@ Polynomial operator/(Polynomial p1, Polynomial p2) {
 }
 
 Polynomial operator+(Polynomial p1, Polynomial p2) {
-	Polynomial result = *new Polynomial(p1.terms_, p1.field);
+	Polynomial result = Polynomial(p1.terms_, p1.field);
 
 	for (auto term : p2.terms_) {
 		result.add_unique(term);
