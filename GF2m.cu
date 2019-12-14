@@ -56,8 +56,8 @@ std::string GF2m::element_to_bit_str(uint32_t value) {
 }
 
 bool GF2m::is_element_by_value(uint32_t value) {
-	for (auto it = elements_.begin(); it != elements_.end(); ++it) {
-		if (it->second == value) {
+	for (int i = 0; i < array_size_; i++) {
+		if (elements_array_[i] == value) {
 			return true;
 		}
 	}
@@ -72,23 +72,31 @@ GF2m::GF2m(uint32_t irreduciblePolynomial) {
 	highBitPoly_ = get_high_bit(irreduciblePolynomial);
 	bitsPerElement_ = (uint32_t)log2(highBitPoly_);
 	fieldMod_ = irreduciblePolynomial ^ highBitPoly_;
+	array_size_ = highBitPoly_ - 1;
 
-	while (elements_.size() != highBitPoly_) {
-		elements_.clear();
+	int j = 1;
+	while (j != array_size_) {
+		elements_array_ = new uint32_t[array_size_];
+		for (int i = 0; i < array_size_; i++) {
+			elements_array_[i] = 0;
+		}
+		elements_array_[0] = 1;
+		j = 1;
+
 		elementsToPrint_.clear();
-		elements_.insert(std::pair<int, uint32_t>(-1, 0));
-		elements_.insert(std::pair<int, uint32_t>(0, 1));
 		elementsToPrint_.push_back(std::pair<int, uint32_t>(-1, 0));
 		elementsToPrint_.push_back(std::pair<int, uint32_t>(0, 1));
 
 		fieldElement = primitiveElement;
-		for (uint32_t i = 0; i < highBitPoly_ - 2; i++) {
+		for (int i = 0; i < array_size_ - 1; i++) {
 			if (is_element_by_value(fieldElement)) {
+				delete[] elements_array_;
 				break;
 			}
-			elements_.insert(std::pair<int, uint32_t>(i + 1, fieldElement));
+			elements_array_[i + 1] = fieldElement;
 			elementsToPrint_.push_back(std::pair<int, uint32_t>(i + 1, fieldElement));
 			fieldElement = elements_mult(fieldElement, primitiveElement);
+			j++;
 		}
 
 		primitiveElement++;
@@ -96,7 +104,7 @@ GF2m::GF2m(uint32_t irreduciblePolynomial) {
 }
 
 std::ostream& operator<<(std::ostream &os, GF2m& field) {
-	if (field.elements_.size() == 0) {
+	if (field.elementsToPrint_.size() == 0) {
 		os << "empty field" << std::endl;
 		return os;
 	}

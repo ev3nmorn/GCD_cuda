@@ -7,12 +7,11 @@
 #include <iostream>
 #include <list>
 #include <string>
-#include <unordered_map>
-
 
 class GF2m {
 private:
-	std::unordered_map<int, uint32_t> elements_;
+	uint32_t* elements_array_;
+	int array_size_;
 	std::list<std::pair<int, uint32_t>> elementsToPrint_;
 	uint32_t fieldMod_, bitsPerElement_, highBitPoly_;
 
@@ -25,7 +24,7 @@ public:
 	GF2m(uint32_t irreduciblePolynomial);
 	GF2m() {}
 	~GF2m() {}
-	uint32_t get_elements_count() { return highBitPoly_; }
-	std::unordered_map<int, uint32_t> get_elements() { return elements_; }
+	int get_array_size() { return array_size_; }
+	uint32_t* get_field_elements() { return elements_array_; }
 	friend std::ostream& operator<<(std::ostream &os, GF2m& field);
 };
